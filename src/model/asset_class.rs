@@ -34,9 +34,15 @@ impl AssetClass {
         }
     }
 
+    pub fn invest(&mut self, investment: f32) {
+        for classification in &mut self.classifications {
+            classification.invest(investment);
+        }
+    }
+
     pub fn print(&mut self) {
         println!("{} - {:.2}€", self.name, self.value);
-        for classification in &mut self.classifications{
+        for classification in &mut self.classifications {
             classification.print(&String::from("  "));
         }
     }

@@ -25,11 +25,18 @@ impl Classification {
                 name: class_row.get(1),
                 allocation: class_row.get(2),
                 value: 0.0,
-                parent_value:self.value,
+                investment: 0.0,
+                parent_value: self.value,
                 classifications: Vec::new(),
             };
             class.resolve(client, assets);
             self.classes.push(class);
+        }
+    }
+
+    pub fn invest(&mut self, investment: f32) {
+        for class in &mut self.classes {
+            class.invest(investment);
         }
     }
 

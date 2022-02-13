@@ -13,10 +13,19 @@ fn main() {
     .unwrap();
 
     let assets = get_assets(&mut client);
-    let asset_classes = get_asset_classes(&mut client, &assets);
-    for mut asset_class in asset_classes {
+    let mut asset_classes = get_asset_classes(&mut client, &assets);
+    for asset_class in &mut asset_classes {
         asset_class.resolve(&mut client, &assets);
         asset_class.print();
+    }
+
+    let mut input = String::new();
+    println!("How much money should be invested?");
+    let _b1 = std::io::stdin().read_line(&mut input).unwrap();
+    //println!("---{}---",input);
+    let investment_amount = input.trim().parse::<f32>().unwrap();
+    for asset_class in &mut asset_classes {
+        asset_class.invest(investment_amount);
     }
 }
 

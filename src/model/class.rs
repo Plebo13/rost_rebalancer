@@ -9,6 +9,7 @@ pub struct Class {
     pub name: String,
     pub allocation: f32,
     pub value: f32,
+    pub investment: f32,
     pub parent_value: f32,
     pub classifications: Vec<Classification>,
 }
@@ -44,6 +45,20 @@ impl Class {
             };
             classification.resolve(client, assets);
             self.classifications.push(classification);
+        }
+    }
+
+    pub fn invest(&mut self, investment: f32) {
+        let goal_value: f32 = (self.parent_value + investment) * self.allocation / 100.0;
+        let mut diff = goal_value - self.value;
+        if diff > 0.0 {
+            if diff > investment {
+                diff = investment;
+            }
+            println!("{}: {:.2}€", self.name, diff);
+        }
+        for classification in &mut self.classifications {
+            classification.invest(diff);
         }
     }
 
