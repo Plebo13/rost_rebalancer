@@ -25,7 +25,7 @@ fn main() {
     //println!("---{}---",input);
     let investment_amount = input.trim().parse::<f32>().unwrap();
     for asset_class in &mut asset_classes {
-        asset_class.invest(investment_amount);
+        asset_class.invest(investment_amount, &mut client);
     }
 }
 

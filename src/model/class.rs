@@ -48,17 +48,25 @@ impl Class {
         }
     }
 
-    pub fn invest(&mut self, investment: f32) {
+    pub fn invest(&mut self, investment: f32, client: &mut Client) {
         let goal_value: f32 = (self.parent_value + investment) * self.allocation / 100.0;
-        let mut diff = goal_value - self.value;
-        if diff > 0.0 {
-            if diff > investment {
-                diff = investment;
-            }
-            println!("{}: {:.2}€", self.name, diff);
+        let mut delta = goal_value - self.value;
+        if delta > investment {
+            delta = investment;
         }
-        for classification in &mut self.classifications {
-            classification.invest(diff);
+
+        if self.classifications.len() > 0 {
+            for classification in &mut self.classifications {
+                classification.invest(delta, client);
+            }
+        } else {
+            let query = format!(
+                "UPDATE classes
+                SET delta={:.2} 
+                WHERE id={}",
+                delta, self.id
+            );
+            client.query(&query, &[]).unwrap();
         }
     }
 

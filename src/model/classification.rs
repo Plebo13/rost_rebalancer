@@ -34,9 +34,9 @@ impl Classification {
         }
     }
 
-    pub fn invest(&mut self, investment: f32) {
+    pub fn invest(&mut self, investment: f32, client: &mut Client) {
         for class in &mut self.classes {
-            class.invest(investment);
+            class.invest(investment, client);
         }
     }
 

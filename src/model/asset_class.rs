@@ -34,9 +34,9 @@ impl AssetClass {
         }
     }
 
-    pub fn invest(&mut self, investment: f32) {
+    pub fn invest(&mut self, investment: f32, client: &mut Client) {
         for classification in &mut self.classifications {
-            classification.invest(investment);
+            classification.invest(investment, client);
         }
     }
 
