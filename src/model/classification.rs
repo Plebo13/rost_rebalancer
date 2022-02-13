@@ -1,8 +1,6 @@
-use std::collections::HashMap;
-
 use postgres::Client;
 
-use super::{asset::Asset, class::Class};
+use super::class::Class;
 
 pub struct Classification {
     pub id: i32,
@@ -12,7 +10,7 @@ pub struct Classification {
 }
 
 impl Classification {
-    pub fn resolve(&mut self, client: &mut Client, assets: &HashMap<String, Asset>) {
+    pub fn resolve(&mut self, client: &mut Client) {
         let query = format!(
             "SELECT id, name, allocation
             FROM classes
@@ -29,7 +27,7 @@ impl Classification {
                 parent_value: self.value,
                 classifications: Vec::new(),
             };
-            class.resolve(client, assets);
+            class.resolve(client);
             self.classes.push(class);
         }
     }

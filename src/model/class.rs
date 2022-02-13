@@ -1,8 +1,6 @@
-use std::collections::HashMap;
-
 use postgres::Client;
 
-use super::{asset::Asset, classification::Classification};
+use super::classification::Classification;
 
 pub struct Class {
     pub id: i32,
@@ -15,16 +13,18 @@ pub struct Class {
 }
 
 impl Class {
-    pub fn resolve(&mut self, client: &mut Client, assets: &HashMap<String, Asset>) {
+    pub fn resolve(&mut self, client: &mut Client) {
         let mut query = format!(
-            "SELECT asset
-            FROM asset_mapping
-            WHERE class={}",
+            "SELECT value
+            FROM assets
+            WHERE EXISTS (SELECT id
+                FROM asset_mapping
+                WHERE asset=assets.id AND class={})",
             self.id
         );
         for row in client.query(&query, &[]).unwrap() {
-            let asset_id: String = row.get(0);
-            self.value += assets.get(&asset_id).unwrap().value;
+            let asset_value: f32 = row.get(0);
+            self.value += asset_value;
         }
 
         query = format!(
@@ -43,7 +43,7 @@ impl Class {
                 value: self.value,
                 classes: Vec::new(),
             };
-            classification.resolve(client, assets);
+            classification.resolve(client);
             self.classifications.push(classification);
         }
     }

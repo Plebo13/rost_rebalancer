@@ -1,6 +1,4 @@
-use model::asset::Asset;
 use postgres::{Client, NoTls};
-use std::collections::HashMap;
 
 use crate::model::asset_class::AssetClass;
 mod model;
@@ -12,10 +10,10 @@ fn main() {
     )
     .unwrap();
 
-    let assets = get_assets(&mut client);
-    let mut asset_classes = get_asset_classes(&mut client, &assets);
+    update_assets(&mut client);
+    let mut asset_classes = get_asset_classes(&mut client);
     for asset_class in &mut asset_classes {
-        asset_class.resolve(&mut client, &assets);
+        asset_class.resolve(&mut client);
         asset_class.print();
     }
 
@@ -29,7 +27,7 @@ fn main() {
     }
 }
 
-fn get_asset_classes(client: &mut Client, assets: &HashMap<String, Asset>) -> Vec<AssetClass> {
+fn get_asset_classes(client: &mut Client) -> Vec<AssetClass> {
     let mut asset_classes: Vec<AssetClass> = Vec::new();
     for row in client
         .query("SELECT id, name FROM asset_classes", &[])
@@ -42,35 +40,34 @@ fn get_asset_classes(client: &mut Client, assets: &HashMap<String, Asset>) -> Ve
             classifications: Vec::new(),
         };
 
-        let query = format!("SELECT id FROM assets WHERE asset_class={}", asset_class.id);
+        let query = format!(
+            "SELECT value FROM assets WHERE asset_class={}",
+            asset_class.id
+        );
         for assets_row in client.query(&query, &[]).unwrap() {
-            let asset_id: String = assets_row.get(0);
-            asset_class.value += assets.get(&asset_id).unwrap().value;
+            let asset_value: f32 = assets_row.get(0);
+            asset_class.value += asset_value;
         }
         asset_classes.push(asset_class);
     }
     return asset_classes;
 }
 
-fn get_assets(client: &mut Client) -> HashMap<String, Asset> {
-    let mut assets: HashMap<String, Asset> = HashMap::new();
+fn update_assets(client: &mut Client) {
     for asset_row in client
-        .query("SELECT id, name, enabled, quantity FROM assets", &[])
+        .query("SELECT id, quantity FROM assets", &[])
         .unwrap()
     {
         let id: String = asset_row.get(0);
-        let name: String = asset_row.get(1);
-        let enabled: bool = asset_row.get(2);
-        let quantity: f32 = asset_row.get(3);
+        let quantity: f32 = asset_row.get(1);
         let value: f32 = rost_app::get_etf_price(id.clone()).unwrap() * quantity;
-        let asset = Asset {
-            name,
-            enabled,
-            quantity,
-            value,
-        };
 
-        assets.insert(id, asset);
+        let update_query = format!(
+            "UPDATE assets
+            SET value={:.2} 
+            WHERE id='{}'",
+            value, id
+        );
+        client.query(&update_query, &[]).unwrap();
     }
-    return assets;
 }
