@@ -20,10 +20,105 @@ fn main() {
     let mut input = String::new();
     println!("How much money should be invested?");
     let _b1 = std::io::stdin().read_line(&mut input).unwrap();
-    //println!("---{}---",input);
-    let investment_amount = input.trim().parse::<f32>().unwrap();
+    let investment = input.trim().parse::<f32>().unwrap();
     for asset_class in &mut asset_classes {
-        asset_class.invest(investment_amount, &mut client);
+        asset_class.invest(investment, &mut client);
+    }
+
+    calculate_assets_delta(&mut client);
+    invest(&mut client, investment);
+}
+
+fn invest(client: &mut Client, mut investment: f32) {
+    for asset_row in client
+        .query("SELECT id, delta FROM assets ORDER BY ter, value", &[])
+        .unwrap()
+    {
+        if investment > 0.0 {
+            let mut invested: bool = false;
+            let asset_id: String = asset_row.get(0);
+            let mut asset_delta: f32 = asset_row.get(1);
+            if investment < asset_delta {
+                asset_delta = investment;
+            }
+
+            let query = format!(
+                "SELECT id, delta
+            FROM classes
+            WHERE EXISTS (SELECT id
+                FROM asset_mapping
+                WHERE class=classes.id AND asset='{}')",
+                asset_id
+            );
+
+            for class_row in client.query(&query, &[]).unwrap() {
+                let class_id: i32 = class_row.get(0);
+                let mut class_delta: f32 = class_row.get(1);
+
+                if class_delta <= 0.0 {
+
+                    break;
+                } else if class_delta >= asset_delta {
+                    class_delta -= asset_delta;
+                } else {
+                    asset_delta = class_delta;
+                    class_delta = 0.0;
+                }
+
+                let update_query = format!(
+                    "UPDATE classes
+                SET delta={:.2} 
+                WHERE id='{}'",
+                    class_delta, class_id
+                );
+                client.query(&update_query, &[]).unwrap();
+                invested = true;
+            }
+
+            if invested {
+                let update_query = format!(
+                    "UPDATE assets
+            SET investment={:.2} 
+            WHERE id='{}'",
+                    asset_delta, asset_id
+                );
+                client.query(&update_query, &[]).unwrap();
+
+                investment -= asset_delta;
+            }
+        }
+    }
+}
+
+fn calculate_assets_delta(client: &mut Client) {
+    for asset_row in client.query("SELECT id FROM assets", &[]).unwrap() {
+        let asset_id: String = asset_row.get(0);
+        let mut delta: f32 = 0.0;
+
+        let query = format!(
+            "SELECT delta
+            FROM classes
+            WHERE EXISTS (SELECT id
+                FROM asset_mapping
+                WHERE class=classes.id AND asset='{}')",
+            asset_id
+        );
+        for class_row in client.query(&query, &[]).unwrap() {
+            let class_delta: f32 = class_row.get(0);
+            if 0.0 < class_delta {
+                if delta == 0.0 || class_delta < delta {
+                    delta = class_delta;
+                }
+            }
+        }
+
+        let update_query = format!(
+            "UPDATE assets
+            SET delta={:.2} 
+            WHERE id='{}'",
+            delta, asset_id
+        );
+        client.query(&update_query, &[]).unwrap();
     }
 }
 
@@ -64,7 +159,7 @@ fn update_assets(client: &mut Client) {
 
         let update_query = format!(
             "UPDATE assets
-            SET value={:.2} 
+            SET investment=0, delta=0, value={:.2} 
             WHERE id='{}'",
             value, id
         );
