@@ -55,18 +55,16 @@ impl Class {
             delta = investment;
         }
 
-        if self.classifications.len() > 0 {
-            for classification in &mut self.classifications {
-                classification.invest(delta, client);
-            }
-        } else {
-            let query = format!(
-                "UPDATE classes
-                SET delta={:.2} 
-                WHERE id={}",
-                delta, self.id
-            );
-            client.query(&query, &[]).unwrap();
+        let query = format!(
+            "UPDATE classes
+            SET delta={:.2} 
+            WHERE id={}",
+            delta, self.id
+        );
+        client.query(&query, &[]).unwrap();
+
+        for classification in &mut self.classifications {
+            classification.invest(delta, client);
         }
     }
 

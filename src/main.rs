@@ -27,6 +27,22 @@ fn main() {
 
     calculate_assets_delta(&mut client);
     invest(&mut client, investment);
+    print_result(&mut client);
+}
+
+fn print_result(client: &mut Client) {
+    println!("Invest:");
+    for asset_row in client
+        .query(
+            "SELECT name, investment FROM assets WHERE investment>0 ORDER BY investment",
+            &[],
+        )
+        .unwrap()
+    {
+        let name: String = asset_row.get(0);
+        let investment: f32 = asset_row.get(1);
+        println!("{}: {:.2}", name, investment);
+    }
 }
 
 fn invest(client: &mut Client, mut investment: f32) {
@@ -44,10 +60,11 @@ fn invest(client: &mut Client, mut investment: f32) {
 
             let query = format!(
                 "SELECT id, delta
-            FROM classes
-            WHERE EXISTS (SELECT id
-                FROM asset_mapping
-                WHERE class=classes.id AND asset='{}')",
+                FROM classes
+                WHERE EXISTS (SELECT id
+                    FROM asset_mapping
+                    WHERE class=classes.id AND asset='{}')
+                ORDER BY delta",
                 asset_id
             );
 
@@ -56,7 +73,6 @@ fn invest(client: &mut Client, mut investment: f32) {
                 let mut class_delta: f32 = class_row.get(1);
 
                 if class_delta <= 0.0 {
-
                     break;
                 } else if class_delta >= asset_delta {
                     class_delta -= asset_delta;
@@ -67,8 +83,8 @@ fn invest(client: &mut Client, mut investment: f32) {
 
                 let update_query = format!(
                     "UPDATE classes
-                SET delta={:.2} 
-                WHERE id='{}'",
+                    SET delta={:.2} 
+                    WHERE id='{}'",
                     class_delta, class_id
                 );
                 client.query(&update_query, &[]).unwrap();
@@ -78,8 +94,8 @@ fn invest(client: &mut Client, mut investment: f32) {
             if invested {
                 let update_query = format!(
                     "UPDATE assets
-            SET investment={:.2} 
-            WHERE id='{}'",
+                    SET investment={:.2} 
+                    WHERE id='{}'",
                     asset_delta, asset_id
                 );
                 client.query(&update_query, &[]).unwrap();
@@ -154,6 +170,7 @@ fn update_assets(client: &mut Client) {
         .unwrap()
     {
         let id: String = asset_row.get(0);
+        println!("Updating {}", id);
         let quantity: f32 = asset_row.get(1);
         let value: f32 = rost_app::get_etf_price(id.clone()).unwrap() * quantity;
 
@@ -165,4 +182,7 @@ fn update_assets(client: &mut Client) {
         );
         client.query(&update_query, &[]).unwrap();
     }
+
+    // Set all deltas to '0' in the classes table.
+    client.query("UPDATE classes SET delta=0", &[]).unwrap();
 }
