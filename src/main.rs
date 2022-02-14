@@ -1,3 +1,4 @@
+use indicatif::{ProgressBar, ProgressStyle};
 use postgres::{Client, NoTls};
 
 use crate::model::asset_class::AssetClass;
@@ -10,7 +11,7 @@ fn main() {
     )
     .unwrap();
 
-    update_assets(&mut client);
+    update_entries(&mut client);
     let mut asset_classes = get_asset_classes(&mut client);
     for asset_class in &mut asset_classes {
         asset_class.resolve(&mut client);
@@ -41,7 +42,7 @@ fn print_result(client: &mut Client) {
     {
         let name: String = asset_row.get(0);
         let investment: f32 = asset_row.get(1);
-        println!("{}: {:.2}", name, investment);
+        println!("{}: {:.0}", name, investment);
     }
 }
 
@@ -164,13 +165,23 @@ fn get_asset_classes(client: &mut Client) -> Vec<AssetClass> {
     return asset_classes;
 }
 
-fn update_assets(client: &mut Client) {
-    for asset_row in client
+fn update_entries(client: &mut Client) {
+    // Set all deltas to '0' in the classes table.
+    client.query("UPDATE classes SET delta=0", &[]).unwrap();
+
+    let assets = client
         .query("SELECT id, quantity FROM assets", &[])
-        .unwrap()
-    {
+        .unwrap();
+
+    println!("Updating assets...");
+    let progress_bar = ProgressBar::new(assets.len() as u64);
+    progress_bar.set_style(
+        ProgressStyle::default_bar()
+            .template("[{wide_bar:.cyan/blue}]")
+            .progress_chars("#>-"),
+    );
+    for asset_row in assets {
         let id: String = asset_row.get(0);
-        println!("Updating {}", id);
         let quantity: f32 = asset_row.get(1);
         let value: f32 = rost_app::get_etf_price(id.clone()).unwrap() * quantity;
 
@@ -181,8 +192,7 @@ fn update_assets(client: &mut Client) {
             value, id
         );
         client.query(&update_query, &[]).unwrap();
+        progress_bar.inc(1);
     }
-
-    // Set all deltas to '0' in the classes table.
-    client.query("UPDATE classes SET delta=0", &[]).unwrap();
+    progress_bar.finish();
 }

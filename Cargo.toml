@@ -8,3 +8,4 @@ edition = "2021"
 [dependencies]
 postgres = "0.19.2"
 rost_app = "0.1.0"
+indicatif = "0.16.2"
