@@ -38,7 +38,7 @@ impl Classification {
         }
     }
 
-    pub fn print(&mut self, indent: &String) {
+    pub fn print(&mut self, indent: &str) {
         println!("{}{}", indent, self.name);
         for class in &mut self.classes {
             class.print(&format!("  {}", indent));
