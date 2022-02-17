@@ -68,9 +68,9 @@ impl Class {
         }
     }
 
-    pub fn print(&mut self, indent: &String) {
+    pub fn print(&mut self, indent: &str) {
         let percentage: f32 = self.value / self.parent_value * 100.0;
-        if self.classifications.len() > 0 {
+        if !self.classifications.is_empty() {
             println!("{}{} - ({:.2}%)", indent, self.name, percentage);
             for classification in &mut self.classifications {
                 classification.print(&format!("  {}", indent));

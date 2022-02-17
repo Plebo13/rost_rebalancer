@@ -122,10 +122,8 @@ fn calculate_assets_delta(client: &mut Client) {
         );
         for class_row in client.query(&query, &[]).unwrap() {
             let class_delta: f32 = class_row.get(0);
-            if 0.0 < class_delta {
-                if delta == 0.0 || class_delta < delta {
-                    delta = class_delta;
-                }
+            if 0.0 < class_delta && (delta == 0.0 || class_delta < delta) {
+                delta = class_delta;
             }
         }
 
@@ -162,7 +160,7 @@ fn get_asset_classes(client: &mut Client) -> Vec<AssetClass> {
         }
         asset_classes.push(asset_class);
     }
-    return asset_classes;
+    asset_classes
 }
 
 fn update_entries(client: &mut Client) {
