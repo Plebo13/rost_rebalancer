@@ -183,7 +183,7 @@ fn update_entries(client: &mut Client) {
     for asset_row in assets {
         let id: String = asset_row.get(0);
         let quantity: f32 = asset_row.get(1);
-        let value: f32 = rost_app::get_etf_price(id.clone()).unwrap() * quantity;
+        let value: f32 = rost_app::get_etf_price(&id).unwrap() * quantity;
 
         let update_query = format!(
             "UPDATE assets
