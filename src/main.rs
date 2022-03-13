@@ -108,7 +108,10 @@ fn invest(client: &mut Client, mut investment: f32) {
 }
 
 fn calculate_assets_delta(client: &mut Client) {
-    for asset_row in client.query("SELECT id FROM assets", &[]).unwrap() {
+    for asset_row in client
+        .query("SELECT id FROM assets WHERE enabled=true", &[])
+        .unwrap()
+    {
         let asset_id: String = asset_row.get(0);
         let mut delta: f32 = 0.0;
 
